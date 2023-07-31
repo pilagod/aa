@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { UserOperation } from "@aa/interfaces/UserOperation.sol";
 
-import { IValidator } from "./interfaces/IValidator.sol";
+import { IValidator } from "./validator/IValidator.sol";
 
 contract Account {
     address public entryPoint;
