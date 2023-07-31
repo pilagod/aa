@@ -2,19 +2,33 @@
 pragma solidity ^0.8.17;
 
 import { UserOperation } from "@aa/interfaces/UserOperation.sol";
+import { Initializable } from "@oz/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@oz/proxy/utils/UUPSUpgradeable.sol";
 
 import { IValidator } from "./validator/IValidator.sol";
 
-contract Account {
+contract Account is Initializable, UUPSUpgradeable {
     address public entryPoint;
     IValidator public ownerValidator;
 
-    constructor(address _entryPoint, IValidator _ownerValidator) {
+    constructor(address _entryPoint) {
         entryPoint = _entryPoint;
+    }
+
+    function initialize(
+        IValidator _ownerValidator,
+        bytes calldata _ownerValidatorInitData
+    ) external initializer {
         ownerValidator = _ownerValidator;
+        _call(address(_ownerValidator), 0, _ownerValidatorInitData);
     }
 
     receive() external payable { }
+
+    modifier onlySelf() {
+        require(msg.sender == address(this));
+        _;
+    }
 
     modifier onlyEntryPoint() {
         require(msg.sender == entryPoint);
@@ -75,4 +89,11 @@ contract Account {
             }
         }
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        virtual
+        override
+        onlySelf
+    { }
 }
