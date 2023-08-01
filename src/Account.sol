@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import { IEntryPoint } from "@aa/interfaces/IEntryPoint.sol";
 import { UserOperation } from "@aa/interfaces/UserOperation.sol";
+
 import { Initializable } from "@oz/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@oz/proxy/utils/UUPSUpgradeable.sol";
 
 import { IValidator } from "./validator/IValidator.sol";
 
 contract Account is Initializable, UUPSUpgradeable {
-    address public entryPoint;
+    IEntryPoint public entryPoint;
     IValidator public ownerValidator;
 
-    constructor(address _entryPoint) {
+    constructor(IEntryPoint _entryPoint) {
         entryPoint = _entryPoint;
     }
 
@@ -31,7 +33,7 @@ contract Account is Initializable, UUPSUpgradeable {
     }
 
     modifier onlyEntryPoint() {
-        require(msg.sender == entryPoint);
+        require(msg.sender == address(entryPoint));
         _;
     }
 
