@@ -1,3 +1,4 @@
 forge-std/=lib/forge-std/src/
 @aa/=lib/account-abstraction/contracts/
 @oz/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/=lib/openzeppelin-contracts/
