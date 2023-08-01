@@ -27,7 +27,11 @@ abstract contract AATest is Test {
         return new EntryPoint();
     }
 
-    function createUserOp(address sender) internal view returns (UserOperation memory) {
+    function createUserOp(address sender)
+        internal
+        view
+        returns (UserOperation memory)
+    {
         return UserOperation({
             sender: sender,
             nonce: entryPoint.getNonce(sender, 0),

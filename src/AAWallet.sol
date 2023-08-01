@@ -31,7 +31,7 @@ contract AAWallet is
         bytes calldata _ownerValidatorInitData
     ) external initializer {
         ownerValidator = _ownerValidator;
-        Executor.call(address(_ownerValidator), 0, _ownerValidatorInitData);
+        _addValidator(_ownerValidator, _ownerValidatorInitData);
     }
 
     receive() external payable { }
@@ -66,8 +66,10 @@ contract AAWallet is
         bytes4 selector = bytes4(userOp.callData[:4]);
         if (selector == AAWallet.execute.selector) {
             address to = abi.decode(userOp.callData[4:], (address));
-            // TODO: Also check `to` includes validator or not
             if (to == address(this)) {
+                return ownerValidator;
+            }
+            if (validators[to]) {
                 return ownerValidator;
             }
             address validator = address(bytes20(userOp.signature[:20]));
