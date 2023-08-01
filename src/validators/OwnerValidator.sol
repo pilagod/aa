@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { UserOperation } from "@aa/interfaces/UserOperation.sol";
 import { ECDSA } from "@oz/utils/cryptography/ECDSA.sol";
 
-import { IValidator } from "./IValidator.sol";
+import { IValidator } from "src/interfaces/IValidator.sol";
 
 contract OwnerValidator is IValidator {
     using ECDSA for bytes32;

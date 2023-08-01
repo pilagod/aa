@@ -6,7 +6,7 @@ import { IEntryPoint } from "@aa/interfaces/IEntryPoint.sol";
 import { ERC1967Proxy } from "@oz/proxy/ERC1967/ERC1967Proxy.sol";
 import { Create2 } from "@oz/utils/Create2.sol";
 
-import { OwnerValidator } from "./validator/OwnerValidator.sol";
+import { OwnerValidator } from "./validators/OwnerValidator.sol";
 
 import { AAWallet } from "./AAWallet.sol";
 

@@ -7,9 +7,12 @@ import { UserOperation } from "@aa/interfaces/UserOperation.sol";
 import { Initializable } from "@oz/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@oz/proxy/utils/UUPSUpgradeable.sol";
 
-import { IValidator } from "./validator/IValidator.sol";
+import { SelfAuth } from "./base/SelfAuth.sol";
+import { ValidatorManager } from "./base/ValidatorManager.sol";
+import { IValidator } from "./interfaces/IValidator.sol";
+import { Executor } from "./libraries/Executor.sol";
 
-contract AAWallet is Initializable, UUPSUpgradeable {
+contract AAWallet is Initializable, UUPSUpgradeable, SelfAuth, ValidatorManager {
     IEntryPoint public immutable entryPoint;
 
     IValidator public ownerValidator;
@@ -23,15 +26,10 @@ contract AAWallet is Initializable, UUPSUpgradeable {
         bytes calldata _ownerValidatorInitData
     ) external initializer {
         ownerValidator = _ownerValidator;
-        _call(address(_ownerValidator), 0, _ownerValidatorInitData);
+        Executor.call(address(_ownerValidator), 0, _ownerValidatorInitData);
     }
 
     receive() external payable { }
-
-    modifier onlySelf() {
-        require(msg.sender == address(this));
-        _;
-    }
 
     modifier onlyEntryPoint() {
         require(msg.sender == address(entryPoint));
@@ -77,20 +75,7 @@ contract AAWallet is Initializable, UUPSUpgradeable {
         uint256 value,
         bytes calldata data
     ) external onlyEntryPoint {
-        _call(to, value, data);
-    }
-
-    function _call(
-        address target,
-        uint256 value,
-        bytes calldata data
-    ) internal {
-        (bool success, bytes memory result) = target.call{ value: value }(data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        Executor.call(to, value, data);
     }
 
     function _authorizeUpgrade(address newImplementation)
