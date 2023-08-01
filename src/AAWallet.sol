@@ -64,19 +64,35 @@ contract AAWallet is
         returns (IValidator)
     {
         bytes4 selector = bytes4(userOp.callData[:4]);
+
         if (selector == AAWallet.execute.selector) {
             address to = abi.decode(userOp.callData[4:], (address));
-            if (to == address(this)) {
+            if (to == address(this) || validators[to]) {
                 return ownerValidator;
             }
-            if (validators[to]) {
-                return ownerValidator;
+            IValidator validator =
+                IValidator(address(bytes20(userOp.signature[:20])));
+            if (!validators[address(validator)]) {
+                validator = ownerValidator;
             }
-            address validator = address(bytes20(userOp.signature[:20]));
-            if (validators[validator]) {
-                return IValidator(validator);
-            }
+            return validator;
         }
+
+        if (selector == AAWallet.executeBatch.selector) {
+            address[] memory to = abi.decode(userOp.callData[4:], (address[]));
+            for (uint i = 0; i < to.length; i++) {
+                if (to[i] == address(this) || validators[to[i]]) {
+                    return ownerValidator;
+                }
+            }
+            IValidator validator =
+                IValidator(address(bytes20(userOp.signature[:20])));
+            if (!validators[address(validator)]) {
+                validator = ownerValidator;
+            }
+            return validator;
+        }
+
         return ownerValidator;
     }
 
@@ -86,6 +102,20 @@ contract AAWallet is
         bytes calldata data
     ) external onlyEntryPoint {
         Executor.call(to, value, data);
+    }
+
+    function executeBatch(
+        address[] calldata to,
+        uint256[] calldata value,
+        bytes[] calldata data
+    ) external onlyEntryPoint {
+        require(
+            to.length == value.length && to.length == data.length,
+            "wrong array lengths"
+        );
+        for (uint256 i = 0; i < to.length; i++) {
+            Executor.call(to[i], value[i], data[i]);
+        }
     }
 
     function _authorizeUpgrade(address newImplementation)
