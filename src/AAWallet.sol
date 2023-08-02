@@ -7,6 +7,7 @@ import { UserOperation } from "@aa/interfaces/UserOperation.sol";
 import { Initializable } from "@oz/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@oz/proxy/utils/UUPSUpgradeable.sol";
 
+import { PluginManager } from "./base/PluginManager.sol";
 import { SelfAuth } from "./base/SelfAuth.sol";
 import { ValidatorManager } from "./base/ValidatorManager.sol";
 import { IValidator } from "./interfaces/IValidator.sol";
@@ -16,7 +17,8 @@ contract AAWallet is
     Initializable,
     UUPSUpgradeable,
     SelfAuth,
-    ValidatorManager
+    ValidatorManager,
+    PluginManager
 {
     IEntryPoint public immutable entryPoint;
 
