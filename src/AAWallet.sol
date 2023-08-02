@@ -72,8 +72,7 @@ contract AAWallet is
                 return ownerValidator;
             }
             // Allow custom validator when no call to self
-            address validator =
-                address(bytes20(userOp.signature[:20]));
+            address validator = address(bytes20(userOp.signature[:20]));
             if (validators[validator]) {
                 return IValidator(validator);
             }
@@ -83,14 +82,13 @@ contract AAWallet is
 
         if (selector == AAWallet.executeBatch.selector) {
             address[] memory to = abi.decode(userOp.callData[4:], (address[]));
-            for (uint i = 0; i < to.length; i++) {
+            for (uint256 i = 0; i < to.length; i++) {
                 if (to[i] == address(this) || validators[to[i]]) {
                     return ownerValidator;
                 }
             }
             // Allow custom validator when no call to self
-            address validator =
-                address(bytes20(userOp.signature[:20]));
+            address validator = address(bytes20(userOp.signature[:20]));
             if (validators[validator]) {
                 return IValidator(validator);
             }

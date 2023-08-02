@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { IEntryPoint } from "@aa/interfaces/IEntryPoint.sol";
 import { UserOperation } from "@aa/interfaces/UserOperation.sol";
 
 import { ValidatorManager } from "src/base/ValidatorManager.sol";
@@ -32,6 +33,10 @@ contract AAWalletTest is AATest {
     function testSetUp() public {
         assertEq(ownerValidator.owners(address(wallet)), owner.addr());
     }
+
+    /**
+     * Through Owner Validator
+     */
 
     function testTransfer() public {
         Wallet memory recipient = WalletLib.createRandomWallet(vm);
@@ -65,6 +70,34 @@ contract AAWalletTest is AATest {
 
         assertEq(ownerValidator.owners(address(wallet)), newOwner.addr());
     }
+
+    function testCannotExecuteValidatorWhenNotAuthorized() public {
+        OwnerValidator unauthroizedValidator = new OwnerValidator();
+
+        UserOperation memory userOp = createUserOp(address(wallet));
+        userOp.callData = abi.encodeCall(
+            AAWallet.execute,
+            (
+                address(unauthroizedValidator),
+                0,
+                abi.encodeCall(OwnerValidator.setOwner, (address(0)))
+            )
+        );
+        signUserOpEthSignedMessage(owner, userOp);
+
+        vm.expectEmit(true, true, true, true);
+        emit UserOperationRevertReason(
+            getUserOpHash(userOp),
+            address(wallet),
+            userOp.nonce,
+            abi.encodePacked(OwnerValidator.ValidatorNotAuthorized.selector)
+        );
+        handleUserOp(userOp);
+    }
+
+    /**
+     * Through Custom Validator
+     */
 
     function testTransferThroughCustomValidator() public {
         Wallet memory recipient = WalletLib.createRandomWallet(vm);
