@@ -28,6 +28,13 @@ contract AAWallet is
         entryPoint = _entryPoint;
     }
 
+    receive() external payable { }
+
+    modifier onlyEntryPoint() {
+        require(msg.sender == address(entryPoint));
+        _;
+    }
+
     function initialize(
         IValidator _ownerValidator,
         bytes calldata _ownerValidatorInitData
@@ -36,11 +43,15 @@ contract AAWallet is
         _addValidator(_ownerValidator, _ownerValidatorInitData);
     }
 
-    receive() external payable { }
-
-    modifier onlyEntryPoint() {
-        require(msg.sender == address(entryPoint));
-        _;
+    function setOwnerValidator(
+        IValidator _ownerValidator,
+        bytes calldata _ownerValidatorInitData
+    ) external onlySelf {
+        IValidator prevOwnerValidator = ownerValidator;
+        ownerValidator = _ownerValidator;
+        _addValidator(_ownerValidator, _ownerValidatorInitData);
+        // Remove previous owner validator to avoid executing wallet by outdated validation mechanism.
+        _removeValidator(prevOwnerValidator);
     }
 
     function validateUserOp(
