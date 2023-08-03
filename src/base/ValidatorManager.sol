@@ -8,6 +8,7 @@ import { SelfAuth } from "./SelfAuth.sol";
 
 abstract contract ValidatorManager is SelfAuth {
     // TODO: Refactor to linked list
+    // TODO: Refactor to structured storage
     mapping(address => bool) validators;
 
     function addValidator(
