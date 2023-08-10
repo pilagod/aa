@@ -60,9 +60,8 @@ contract AAWallet is
         bytes32 userOpHash,
         uint256 missingAccountFunds
     ) external onlyEntryPoint returns (uint256 validationData) {
-        IValidator validator = _getValidator(userOp);
-        validationData =
-            validator.validateUserOp(userOp, userOpHash, Severity.Low);
+        (IValidator validator, Severity severity) = _getValidationInfo(userOp);
+        validationData = validator.validateUserOp(userOp, userOpHash, severity);
 
         if (missingAccountFunds != 0) {
             (bool success,) = payable(msg.sender).call{
@@ -74,49 +73,64 @@ contract AAWallet is
         }
     }
 
-    function _getValidator(UserOperation calldata userOp)
+    function _getValidationInfo(UserOperation calldata userOp)
         internal
         view
-        returns (IValidator)
+        returns (IValidator, Severity)
     {
         bytes4 selector = bytes4(userOp.callData[:4]);
 
         if (selector == AAWallet.execute.selector) {
-            address to = abi.decode(userOp.callData[4:], (address));
+            (address to,, bytes memory callData) =
+                abi.decode(userOp.callData[4:], (address, uint256, bytes));
             // If execution target is account itself or validator,
             // the call requires to be validated by owner validator.
-            if (to == address(this) || validators[to]) {
-                return ownerValidator;
+            if (to == address(this)) {
+                return (ownerValidator, _parseSeverity(callData));
+            }
+            if (validators[to]) {
+                return (ownerValidator, Severity.High);
             }
             // Allow custom validator when not calling to account itself.
             address validator = address(bytes20(userOp.signature[:20]));
             if (validators[validator]) {
-                return IValidator(validator);
+                return (IValidator(validator), Severity.Low);
             }
             // If custom validator is not valid, fallback to owner validator.
-            return ownerValidator;
+            return (ownerValidator, Severity.Low);
         }
 
         if (selector == AAWallet.executeBatch.selector) {
-            address[] memory to = abi.decode(userOp.callData[4:], (address[]));
+            (address[] memory to,, bytes[] memory callData) =
+                abi.decode(userOp.callData[4:], (address[], uint256[], bytes[]));
+            bool callSelf = false;
             for (uint256 i = 0; i < to.length; i++) {
                 // If at least one execution target is account itself or validator,
                 // the call requires to be validated by owner validator.
-                if (to[i] == address(this) || validators[to[i]]) {
-                    return ownerValidator;
+                if (to[i] == address(this)) {
+                    if (_parseSeverity(callData[i]) == Severity.High) {
+                        return (ownerValidator, Severity.High);
+                    }
+                    callSelf = true;
                 }
+                if (validators[to[i]]) {
+                    return (ownerValidator, Severity.High);
+                }
+            }
+            if (callSelf) {
+                return (ownerValidator, Severity.Low);
             }
             // Allow custom validator when not calling to account itself.
             address validator = address(bytes20(userOp.signature[:20]));
             if (validators[validator]) {
-                return IValidator(validator);
+                return (IValidator(validator), Severity.Low);
             }
             // If custom validator is not valid, fallback to owner validator.
-            return ownerValidator;
+            return (ownerValidator, Severity.Low);
         }
 
         // For other functions on wallet, it must require validated by owner validator.
-        return ownerValidator;
+        return (ownerValidator, _parseSeverity(userOp.callData));
     }
 
     function execute(
@@ -141,10 +155,25 @@ contract AAWallet is
         }
     }
 
+    // Serve as an example function for low severity
+    function lock() external onlySelf { }
+
     function _authorizeUpgrade(address newImplementation)
         internal
         virtual
         override
         onlySelf
     { }
+
+    function _parseSeverity(bytes memory callData)
+        internal
+        pure
+        returns (Severity)
+    {
+        bytes4 selector = bytes4(callData);
+        if (selector == AAWallet.lock.selector) {
+            return Severity.Low;
+        }
+        return Severity.High;
+    }
 }

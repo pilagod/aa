@@ -28,21 +28,33 @@ contract OwnerValidator is IValidator {
     }
 
     mapping(address => address) public owners;
+    mapping(address => address) public guardians;
 
     function setOwner(address owner) external whenValidatorAuthorized {
         owners[msg.sender] = owner;
     }
 
+    function setGuardian(address guardian) external whenValidatorAuthorized {
+        guardians[msg.sender] = guardian;
+    }
+
     function validateUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
-        Severity /* severity */
+        Severity severity
     ) external view whenValidatorAuthorized returns (uint256 validationData) {
-        address owner = owners[msg.sender];
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        if (owner != hash.recover(userOp.signature)) {
-            return 1;
+        address signer = hash.recover(userOp.signature);
+        // Owner can authorize for operation with every severity.
+        if (signer == owners[msg.sender]) {
+            return 0;
         }
-        return 0;
+        // Allow guardian to authorize operation with low severity
+        if (severity == Severity.Low) {
+            if (signer == guardians[msg.sender]) {
+                return 0;
+            }
+        }
+        return 1;
     }
 }
