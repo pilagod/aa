@@ -12,6 +12,7 @@ import { SelfAuth } from "./base/SelfAuth.sol";
 import { ValidatorManager } from "./base/ValidatorManager.sol";
 import { IValidator } from "./interfaces/IValidator.sol";
 import { Executor } from "./libraries/Executor.sol";
+import { Severity } from "./libraries/Severity.sol";
 
 contract AAWallet is
     Initializable,
@@ -60,7 +61,8 @@ contract AAWallet is
         uint256 missingAccountFunds
     ) external onlyEntryPoint returns (uint256 validationData) {
         IValidator validator = _getValidator(userOp);
-        validationData = validator.validateUserOp(userOp, userOpHash);
+        validationData =
+            validator.validateUserOp(userOp, userOpHash, Severity.Low);
 
         if (missingAccountFunds != 0) {
             (bool success,) = payable(msg.sender).call{
@@ -81,7 +83,7 @@ contract AAWallet is
 
         if (selector == AAWallet.execute.selector) {
             address to = abi.decode(userOp.callData[4:], (address));
-            // If execution target is account itself or validator, 
+            // If execution target is account itself or validator,
             // the call requires to be validated by owner validator.
             if (to == address(this) || validators[to]) {
                 return ownerValidator;
@@ -98,7 +100,7 @@ contract AAWallet is
         if (selector == AAWallet.executeBatch.selector) {
             address[] memory to = abi.decode(userOp.callData[4:], (address[]));
             for (uint256 i = 0; i < to.length; i++) {
-                // If at least one execution target is account itself or validator, 
+                // If at least one execution target is account itself or validator,
                 // the call requires to be validated by owner validator.
                 if (to[i] == address(this) || validators[to[i]]) {
                     return ownerValidator;

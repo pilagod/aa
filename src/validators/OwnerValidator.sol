@@ -6,6 +6,7 @@ import { ECDSA } from "@oz/utils/cryptography/ECDSA.sol";
 
 import { IValidator } from "src/interfaces/IValidator.sol";
 import { IValidatorManager } from "src/interfaces/IValidatorManager.sol";
+import { Severity } from "src/libraries/Severity.sol";
 
 contract OwnerValidator is IValidator {
     error ValidatorUnauthorized();
@@ -34,7 +35,8 @@ contract OwnerValidator is IValidator {
 
     function validateUserOp(
         UserOperation calldata userOp,
-        bytes32 userOpHash
+        bytes32 userOpHash,
+        Severity /* severity */
     ) external view whenValidatorAuthorized returns (uint256 validationData) {
         address owner = owners[msg.sender];
         bytes32 hash = userOpHash.toEthSignedMessageHash();
